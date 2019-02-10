@@ -8,6 +8,7 @@ LOCAL_SHARED_LIBRARIES := \
     libbinder \
     libutils \
     libcutils \
+    libbase \
 
 
 

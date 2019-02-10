@@ -11,6 +11,13 @@ service alrmvvnx /system/bin/alrmvvnx
 chmod 755 /system/bin/alrmvvnx
 chcon u:object_r:healthd_exec:s0 /system/bin/alrmvvnx
 * 
+* 
+rw fichier dans data/data selinux:
+sepolicy/public/healthd.te ajouter -> allow healthd system_data_file:file { getattr read write open };
+commenter les lignes de neverallow system_data_file:file no_w_file_perms; ligne 875 system/sepolicy/public/domain.te
+pushd out/target/product/mido/system/etc/selinux/; adb push plat_sepolicy.cil plat_and_mapping_sepolicy.cil.sha256 plat_file_contexts /etc/selinux/; popd
+
+* 
  */
 
 #include <errno.h>
@@ -20,20 +27,44 @@ chcon u:object_r:healthd_exec:s0 /system/bin/alrmvvnx
 #include <stdlib.h>
 #include <string.h>
 #include <cutils/klog.h>
+#include <time.h>
 
 #include <sys/epoll.h> 
 #include <sys/timerfd.h>
+
+#include <android-base/file.h> //libbase (LOCAL_SHARED_LIBRARIES)
 
 
 
 #define LOG_TAG "alrmvvnx"
 #define KLOG_LEVEL 6
 
-//using namespace android;
+using namespace android;
+
+static constexpr const char* file_path = "/data/data/essai.txt";
 
 static int eventct = 10;
 static int epollfd;
 static int wakealarm_fd;
+
+
+void action() {
+	
+	KLOG_WARNING(LOG_TAG, "********Timer Triggered******\n");
+		
+	std::string in;
+	std::string out;
+	std::string time_string;
+	timespec ts;
+	
+    base::ReadFileToString(file_path, &in);			
+	clock_gettime(CLOCK_REALTIME, &ts);	
+	time_string = ctime(&ts.tv_sec); //https://linux.die.net/man/3/ctime
+	out = in + time_string;
+	
+    base::WriteStringToFile(out, file_path);
+	
+}
 
 int main()
 {
@@ -55,9 +86,9 @@ int main()
 
 	//int timerfd_settime(int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value);
 	//remplir les 4 sinon settime renvoie -1
-	itval.it_value.tv_sec = 180;
+	itval.it_value.tv_sec = 20;
 	itval.it_value.tv_nsec = 0;
-	itval.it_interval.tv_sec = 120; //repeating
+	itval.it_interval.tv_sec = 600; //repeating
 	itval.it_interval.tv_nsec = 0;
 	
 	ev.events = EPOLLIN | EPOLLWAKEUP;	
@@ -99,7 +130,8 @@ int main()
 					return -1;
 				}
 				//handle l'event ici
-				KLOG_WARNING(LOG_TAG, "****timer triggered******\n");
+				//KLOG_WARNING(LOG_TAG, "****timer triggered******\n");
+				action();
 			}
 			
 			
