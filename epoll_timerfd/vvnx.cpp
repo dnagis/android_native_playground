@@ -88,7 +88,7 @@ int main()
 	//remplir les 4 sinon settime renvoie -1
 	itval.it_value.tv_sec = 20;
 	itval.it_value.tv_nsec = 0;
-	itval.it_interval.tv_sec = 600; //repeating
+	itval.it_interval.tv_sec = 1800; //repeating
 	itval.it_interval.tv_nsec = 0;
 	
 	ev.events = EPOLLIN | EPOLLWAKEUP;	
