@@ -1,8 +1,15 @@
-/*
+/**
 ***
 * frameworks/base/cmds/
 * 
 * adb push out/target/product/mido/system/bin/sync_db /system/bin
+* 
+* envoi de résultats d'une requete sqlite en POST.
+* basé sur les fonctionnalités/folders: 
+* sqlite
+* httpcurl
+* epoll_timerfd
+* 
 * 
 * 
  */
@@ -14,23 +21,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 #include <curl/curl.h>
 #include <sqlite3.h>
-
 
 void send_via_curl(int i, const unsigned char *mac) {
 	//printf("resultat: %i, %s \n", i, mac);
 	CURL *curl;
-	CURLcode res;
-	
+	CURLcode res;	
 
-	curl_global_init(CURL_GLOBAL_ALL);
-	
+	curl_global_init(CURL_GLOBAL_ALL);	
 
 	curl = curl_easy_init();
 	if(curl) {
-	curl_easy_setopt(curl, CURLOPT_URL, "http://192.168.1.7:8000");
+	curl_easy_setopt(curl, CURLOPT_URL, "192.168.1.7:8000");
 	char str[80];
 	//char *number = new char;
 	char number[40];
@@ -39,10 +42,9 @@ void send_via_curl(int i, const unsigned char *mac) {
 	strcat(str, number);
 	strcat(str, "&mac=");
 	strcat(str, (char *)(mac));
-	printf("le POST a cette gueule: %s\n", str);
+	printf("le POST a cette gueule: %s\n", str); //"id=205&mac=30:AE:A4:04:C3:5A"
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, str);
-	//curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
-	
+
 	res = curl_easy_perform(curl);
 
 	if(res != CURLE_OK)
@@ -51,16 +53,11 @@ void send_via_curl(int i, const unsigned char *mac) {
 	curl_easy_cleanup(curl);
 	}
 	curl_global_cleanup();
-			
-			
-			
-			
+				
 }
 
-
-
-int main()
-{
+void fetch_db() {
+	
 	sqlite3 *db;
    	sqlite3_stmt *stmt;
 	int rc;
@@ -71,7 +68,6 @@ int main()
 	rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);	
 	if (rc != SQLITE_OK) {
 		printf("error: %s", sqlite3_errmsg(db));
-		return 1;
 	}
 	
 	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
@@ -86,6 +82,18 @@ int main()
 	
 	sqlite3_finalize(stmt);
 	sqlite3_close(db);
+	
+	
+	
+}
+
+
+
+
+
+int main()
+{
+	fetch_db();
 	
     _exit(0);
 }
