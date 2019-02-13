@@ -8,7 +8,8 @@ LOCAL_SHARED_LIBRARIES := \
     libbinder \
     libutils \
     libsqlite \
-    libcurl
+    libcurl \
+    libcutils \
 
 
 
