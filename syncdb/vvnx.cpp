@@ -29,12 +29,12 @@ service sync_db /system/bin/sync_db
 selinux pour aller bricoler /data/data/com.example.android.bluealrm/databases
 system/sepolicy/private/vvnx.te
 	typeattribute vvnx coredomain;
-	init_daemon_domain(vvnx)	
+	init_daemon_domain(vvnx)
 	allow vvnx kmsg_device:chr_file { write open };
 	allow vvnx system_app_data_file:dir { search };
 	allow vvnx system_app_data_file:file { getattr read write open ioctl lock };
 	allow vvnx self:capability { dac_override dac_read_search };
-	allow vvnx self:{ udp_socket tcp_socket } { create setopt connect };
+	allow vvnx self:{ udp_socket tcp_socket } { create getopt setopt connect };
 	allow vvnx self:capability { net_raw };
 	allow vvnx fwmarkd_socket:sock_file write;
 	allow vvnx port:tcp_socket { name_connect };
@@ -42,7 +42,9 @@ system/sepolicy/private/vvnx.te
 	wakelock_use(vvnx)
 system/sepolicy/public/domain.te
 	"-vvnx" dans le neverallow system_app_data_file:dir_file_class_set { create unlink open }; (commentaire: "respect system_app sandboxes")
-
+system/sepolicy/public/netd.te
+	allow netd vvnx:fd use;
+	allow netd vvnx:tcp_socket { read write getopt setopt };
 
 et il faut pour le package du folder auquel tu veux accéder:
 * android:sharedUserId="android.uid.system" dans la première balise manifest
