@@ -1,18 +1,22 @@
 /**
 ***
-* frameworks/base/cmds/
-* 
-* 
 * 
 * envoi de résultats d'une requete sqlite en POST.
 * basé sur les fonctionnalités/folders: 
 * sqlite
 * httpcurl
 * epoll_timerfd
-* 
-* 
-* adb push out/target/product/mido/system/bin/sync_db /system/bin
-* 
+
+* path où je le mets d'habitude: frameworks/base/cmds/
+
+adb push out/target/product/mido/system/bin/sync_db /system/bin
+
+chmod 755 /system/bin/sync_db
+chcon u:object_r:vvnx_exec:s0 /system/bin/sync_db 
+
+
+
+
 * démarrage par init:
 
    /etc/init/sync_db.rc (chmod 755)
@@ -20,17 +24,21 @@ service sync_db /system/bin/sync_db
     class main
     oneshot
  
-chmod 755 /system/bin/sync_db
-chcon u:object_r:vvnx_exec:s0 /system/bin/sync_db
+
 
 selinux pour aller bricoler /data/data/com.example.android.bluealrm/databases
-vvnx.te
+system/sepolicy/private/vvnx.te
 	typeattribute vvnx coredomain;
 	init_daemon_domain(vvnx)	
 	allow vvnx kmsg_device:chr_file { write open };
 	allow vvnx system_app_data_file:dir { search };
 	allow vvnx system_app_data_file:file { getattr read write open ioctl lock };
 	allow vvnx self:capability { dac_override dac_read_search };
+	allow vvnx self:{ udp_socket tcp_socket } { create setopt connect };
+	allow vvnx self:capability { net_raw };
+	allow vvnx fwmarkd_socket:sock_file write;
+	allow vvnx port:tcp_socket { name_connect };
+	allow vvnx netd:unix_stream_socket { connectto };
 	wakelock_use(vvnx)
 system/sepolicy/public/domain.te
 	"-vvnx" dans le neverallow system_app_data_file:dir_file_class_set { create unlink open }; (commentaire: "respect system_app sandboxes")
@@ -76,7 +84,7 @@ void send_via_curl(int i, const unsigned char *mac) {
 
 	curl = curl_easy_init();
 	if(curl) {
-	curl_easy_setopt(curl, CURLOPT_URL, "192.168.1.7:8000");
+	curl_easy_setopt(curl, CURLOPT_URL, "192.168.1.118:8000");
 	char str[80];
 	//char *number = new char;
 	char number[40];
@@ -85,13 +93,13 @@ void send_via_curl(int i, const unsigned char *mac) {
 	strcat(str, number);
 	strcat(str, "&mac=");
 	strcat(str, (char *)(mac));
-	printf("le POST a cette gueule: %s\n", str); //"id=205&mac=30:AE:A4:04:C3:5A"
+	KLOG_WARNING(LOG_TAG, "le POST a cette gueule: %s\n", str); //"id=205&mac=30:AE:A4:04:C3:5A"
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, str);
 
 	res = curl_easy_perform(curl);
 
 	if(res != CURLE_OK)
-	fprintf(stderr, "curl_easy_perform() failed: %s\n",
+	KLOG_WARNING(LOG_TAG, "curl_easy_perform() failed: %s\n",
 	curl_easy_strerror(res));
 	curl_easy_cleanup(curl);
 	}
@@ -106,11 +114,11 @@ void fetch_db() {
 	int rc;
 
 	rc = sqlite3_open("/data/data/com.example.android.bluealrm/databases/temp.db", &db);  
-	char const *sql = "select * from temp WHERE ALRMTIME=1549708291;";	
+	char const *sql = "select * from temp WHERE ALRMTIME=1550171171;";	
 	
 	rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);	
 	if (rc != SQLITE_OK) {
-		printf("error: %s", sqlite3_errmsg(db));
+		KLOG_WARNING(LOG_TAG, "error: %s", sqlite3_errmsg(db));
 	}
 	
 	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
@@ -120,7 +128,7 @@ void fetch_db() {
 	}
 	
 	if (rc != SQLITE_DONE) {
-	printf("error: %s", sqlite3_errmsg(db));
+	KLOG_WARNING(LOG_TAG, "error: %s", sqlite3_errmsg(db));
 	}
 	
 	sqlite3_finalize(stmt);
@@ -153,7 +161,7 @@ int main()
 	//remplir les 4 sinon settime renvoie -1
 	itval.it_value.tv_sec = 20;
 	itval.it_value.tv_nsec = 0;
-	itval.it_interval.tv_sec = 1800; //repeating
+	itval.it_interval.tv_sec = 60; //repeating
 	itval.it_interval.tv_nsec = 0;
 	
 	ev.events = EPOLLIN | EPOLLWAKEUP;	
