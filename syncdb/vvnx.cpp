@@ -24,13 +24,17 @@ chmod 755 /system/bin/sync_db
 chcon u:object_r:vvnx_exec:s0 /system/bin/sync_db
 
 selinux pour aller bricoler /data/data/com.example.android.bluealrm/databases
-
+vvnx.te
 	typeattribute vvnx coredomain;
-	init_daemon_domain(vvnx)
-	
+	init_daemon_domain(vvnx)	
 	allow vvnx kmsg_device:chr_file { write open };
 	allow vvnx system_app_data_file:dir { search };
+	allow vvnx system_app_data_file:file { getattr read write open ioctl lock };
+	allow vvnx self:capability { dac_override dac_read_search };
 	wakelock_use(vvnx)
+system/sepolicy/public/domain.te
+	"-vvnx" dans le neverallow system_app_data_file:dir_file_class_set { create unlink open }; (commentaire: "respect system_app sandboxes")
+
 
 et il faut pour le package du folder auquel tu veux accéder:
 * android:sharedUserId="android.uid.system" dans la première balise manifest
