@@ -34,7 +34,7 @@ system/sepolicy/private/vvnx.te
 	allow vvnx system_app_data_file:dir { search };
 	allow vvnx system_app_data_file:file { getattr read write open ioctl lock };
 	allow vvnx self:capability { dac_override dac_read_search };
-	allow vvnx self:{ udp_socket tcp_socket } { create getopt setopt connect };
+	allow vvnx self:{ udp_socket tcp_socket } { getattr write create getopt setopt connect };
 	allow vvnx self:capability { net_raw };
 	allow vvnx fwmarkd_socket:sock_file write;
 	allow vvnx port:tcp_socket { name_connect };
@@ -88,7 +88,6 @@ void send_via_curl(int i, const unsigned char *mac) {
 	if(curl) {
 	curl_easy_setopt(curl, CURLOPT_URL, "192.168.1.118:8000");
 	char str[80];
-	//char *number = new char;
 	char number[40];
 	strcpy(str, "id=");	
 	sprintf(number, "%i", i);
@@ -97,6 +96,7 @@ void send_via_curl(int i, const unsigned char *mac) {
 	strcat(str, (char *)(mac));
 	KLOG_WARNING(LOG_TAG, "le POST a cette gueule: %s\n", str); //"id=205&mac=30:AE:A4:04:C3:5A"
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, str);
+
 
 	res = curl_easy_perform(curl);
 
