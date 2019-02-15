@@ -11,8 +11,6 @@ LOCAL_SHARED_LIBRARIES := \
     libcurl \
     libcutils \
 
-
-
 LOCAL_MODULE:= sync_db
 
 LOCAL_MODULE_TAGS := optional

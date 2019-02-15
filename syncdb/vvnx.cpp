@@ -55,7 +55,6 @@ et il faut pour le package du folder auquel tu veux accéder (avoir un context n
 * 
 * 
  */
-
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -70,6 +69,10 @@ et il faut pour le package du folder auquel tu veux accéder (avoir un context n
 #include <curl/curl.h>
 #include <sqlite3.h>
 
+#include <android-base/file.h> //libbase (LOCAL_SHARED_LIBRARIES)
+
+using namespace android;
+
 #define LOG_TAG "sync_db"
 #define KLOG_LEVEL 6
 
@@ -77,7 +80,8 @@ static int eventct = 10;
 static int epollfd;
 static int wakealarm_fd;
 
-void send_via_curl(int i, const unsigned char *mac) {
+
+int send_via_curl(int time, const unsigned char *mac, double temp) {
 	//printf("resultat: %i, %s \n", i, mac);
 	CURL *curl;
 	CURLcode res;	
@@ -87,36 +91,44 @@ void send_via_curl(int i, const unsigned char *mac) {
 	curl = curl_easy_init();
 	if(curl) {
 	curl_easy_setopt(curl, CURLOPT_URL, "192.168.1.118:8000");
+	
 	char str[80];
-	char number[40];
-	strcpy(str, "id=");	
-	sprintf(number, "%i", i);
-	strcat(str, number);
+	char time_str[40];
+	char temp_str[40];
+	
+	strcpy(str, "time=");	
+	sprintf(time_str, "%i", time);
+	strcat(str, time_str);
 	strcat(str, "&mac=");
 	strcat(str, (char *)(mac));
+	strcat(str, "&temp=");
+	sprintf(temp_str, "%0.2f", temp);
+	strcat(str, temp_str);
+	
 	KLOG_WARNING(LOG_TAG, "le POST a cette gueule: %s\n", str); //"id=205&mac=30:AE:A4:04:C3:5A"
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, str);
 
 
 	res = curl_easy_perform(curl);
 
-	if(res != CURLE_OK)
-	KLOG_WARNING(LOG_TAG, "curl_easy_perform() failed: %s\n",
-	curl_easy_strerror(res));
+	if(res != CURLE_OK) {
+	KLOG_WARNING(LOG_TAG, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
 	curl_easy_cleanup(curl);
+	return 1;
+		}
 	}
 	curl_global_cleanup();
-				
+	return 0;			
 }
 
 void fetch_db() {
 	
 	sqlite3 *db;
    	sqlite3_stmt *stmt;
-	int rc;
+	int rc, ret;
 
 	rc = sqlite3_open("/data/data/com.example.android.bluealrm/databases/temp.db", &db);  
-	char const *sql = "select * from temp WHERE ALRMTIME=1550171171;";	
+	char const *sql = "select * from temp WHERE ALRMTIME>1550252190;";	
 	
 	rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);	
 	if (rc != SQLITE_OK) {
@@ -124,9 +136,22 @@ void fetch_db() {
 	}
 	
 	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-		int id           = sqlite3_column_int (stmt, 0);
+		//int id           			= sqlite3_column_int (stmt, 0);
+		int alrmtime           		= sqlite3_column_int(stmt, 1);
 		const unsigned char *mac = sqlite3_column_text(stmt, 2);
-		send_via_curl(id, mac);
+		double temp 				= sqlite3_column_double(stmt, 3);
+		int sent           			= sqlite3_column_int(stmt, 4);
+		if (sent == 0) {
+				
+			ret = send_via_curl(alrmtime, mac, temp);
+			KLOG_WARNING(LOG_TAG, "Retour de Curl: %i\n", ret); 
+		
+		
+		
+		}
+		
+		
+		
 	}
 	
 	if (rc != SQLITE_DONE) {
@@ -143,7 +168,7 @@ void fetch_db() {
 int main()
 {
 	
-		int nevents = 0;
+	int nevents = 0;
 
 	struct epoll_event ev;
 	struct epoll_event events[eventct];
@@ -161,9 +186,9 @@ int main()
 
 	//int timerfd_settime(int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value);
 	//remplir les 4 sinon settime renvoie -1
-	itval.it_value.tv_sec = 20;
+	itval.it_value.tv_sec = 30; //initial timer (secondes)
 	itval.it_value.tv_nsec = 0;
-	itval.it_interval.tv_sec = 1800; //repeating
+	itval.it_interval.tv_sec = 80; //repeating timer après l'initial (secondes)
 	itval.it_interval.tv_nsec = 0;
 	
 	ev.events = EPOLLIN | EPOLLWAKEUP;	
