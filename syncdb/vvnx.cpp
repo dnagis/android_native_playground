@@ -31,9 +31,9 @@ SElinux pour aller bricoler /data/data/com.example.android.bluealrm/databases
 	typeattribute vvnx coredomain;
 	init_daemon_domain(vvnx)
 	allow vvnx kmsg_device:chr_file { write open };
-	allow vvnx system_app_data_file:dir { search };
-	allow vvnx system_app_data_file:file { getattr read write open ioctl lock };
-	allow vvnx self:capability { dac_override dac_read_search };
+	allow vvnx system_app_data_file:dir { read write search remove_name add_name open };
+	allow vvnx system_app_data_file:file { setattr getattr read write open ioctl lock unlink create };
+	allow vvnx self:capability { dac_override dac_read_search chown };
 	allow vvnx self:{ udp_socket tcp_socket } { read getattr write create getopt setopt connect };
 	allow vvnx self:capability { net_raw };
 	allow vvnx fwmarkd_socket:sock_file write;
@@ -86,6 +86,7 @@ int send_via_curl(int time, const unsigned char *mac, double temp) {
 	CURL *curl;
 	CURLcode res;	
 
+	sleep(1);//le server aime pas se faire innonder...
 	curl_global_init(CURL_GLOBAL_ALL);	
 
 	curl = curl_easy_init();
@@ -124,11 +125,11 @@ int send_via_curl(int time, const unsigned char *mac, double temp) {
 void fetch_db() {
 	
 	sqlite3 *db;
-   	sqlite3_stmt *stmt;
+   	sqlite3_stmt *stmt, *stmt_updt;
 	int rc, ret;
 
 	rc = sqlite3_open("/data/data/com.example.android.bluealrm/databases/temp.db", &db);  
-	char const *sql = "select * from temp WHERE ALRMTIME>1550252190;";	
+	char const *sql = "select * from temp WHERE sent=0;";	
 	
 	rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);	
 	if (rc != SQLITE_OK) {
@@ -136,7 +137,7 @@ void fetch_db() {
 	}
 	
 	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-		//int id           			= sqlite3_column_int (stmt, 0);
+		int id           			= sqlite3_column_int (stmt, 0);
 		int alrmtime           		= sqlite3_column_int(stmt, 1);
 		const unsigned char *mac = sqlite3_column_text(stmt, 2);
 		double temp 				= sqlite3_column_double(stmt, 3);
@@ -145,6 +146,18 @@ void fetch_db() {
 				
 			ret = send_via_curl(alrmtime, mac, temp);
 			KLOG_WARNING(LOG_TAG, "Retour de Curl: %i\n", ret); 
+			
+				if ( ret == 0 ) {
+					char sqlupdt[80];
+					char id_str[40];					
+					strcpy(sqlupdt, "update temp set sent=1 where id = ");
+					sprintf(id_str, "%i", id);
+					strcat(sqlupdt, id_str);
+					strcat(sqlupdt, ";");
+					sqlite3_prepare_v2(db, sqlupdt, -1, &stmt_updt, NULL);
+					sqlite3_step(stmt_updt);
+					
+				}
 		
 		
 		
@@ -188,7 +201,7 @@ int main()
 	//remplir les 4 sinon settime renvoie -1
 	itval.it_value.tv_sec = 30; //initial timer (secondes)
 	itval.it_value.tv_nsec = 0;
-	itval.it_interval.tv_sec = 80; //repeating timer après l'initial (secondes)
+	itval.it_interval.tv_sec = 300; //repeating timer après l'initial (secondes)
 	itval.it_interval.tv_nsec = 0;
 	
 	ev.events = EPOLLIN | EPOLLWAKEUP;	
