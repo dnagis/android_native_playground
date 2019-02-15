@@ -34,6 +34,7 @@ int main()
    	sqlite3_stmt *stmt;
 	int rc;
 
+
 	rc = sqlite3_open("/data/data/com.example.android.bluealrm/databases/temp.db", &db);  
 	char const *sql = "select * from temp WHERE ALRMTIME=1549708291;";
 	
