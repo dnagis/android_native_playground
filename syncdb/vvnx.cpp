@@ -14,7 +14,7 @@ adb push out/target/product/mido/system/bin/sync_db /system/bin
 chmod 755 /system/bin/sync_db
 chcon u:object_r:vvnx_exec:s0 /system/bin/sync_db 
 
-
+sqlite3 /data/data/com.example.android.bluealrm/databases/temp.db "select datetime(ALRMTIME, 'unixepoch','localtime'), MAC, TEMP, sent from temp;"
 
 
 * démarrage par init:
@@ -129,7 +129,7 @@ void fetch_db() {
 	int rc, ret;
 
 	rc = sqlite3_open("/data/data/com.example.android.bluealrm/databases/temp.db", &db);  
-	char const *sql = "select * from temp WHERE sent=0;";	
+	char const *sql = "select * from temp WHERE sent=0 and alrmtime < 1550178996;";	
 	
 	rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);	
 	if (rc != SQLITE_OK) {
@@ -154,8 +154,13 @@ void fetch_db() {
 					sprintf(id_str, "%i", id);
 					strcat(sqlupdt, id_str);
 					strcat(sqlupdt, ";");
-					sqlite3_prepare_v2(db, sqlupdt, -1, &stmt_updt, NULL);
-					sqlite3_step(stmt_updt);
+					KLOG_WARNING(LOG_TAG, "La requete pour l update: %s\n", sqlupdt);
+					rc = sqlite3_prepare_v2(db, sqlupdt, -1, &stmt_updt, NULL);
+					rc = sqlite3_step(stmt_updt);
+						if (rc != SQLITE_OK) {
+								KLOG_WARNING(LOG_TAG, "error update: %s\n", sqlite3_errmsg(db));
+							}
+					
 					
 				}
 		
@@ -201,7 +206,7 @@ int main()
 	//remplir les 4 sinon settime renvoie -1
 	itval.it_value.tv_sec = 30; //initial timer (secondes)
 	itval.it_value.tv_nsec = 0;
-	itval.it_interval.tv_sec = 300; //repeating timer après l'initial (secondes)
+	itval.it_interval.tv_sec = 600; //repeating timer après l'initial (secondes)
 	itval.it_interval.tv_nsec = 0;
 	
 	ev.events = EPOLLIN | EPOLLWAKEUP;	
