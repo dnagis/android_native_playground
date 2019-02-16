@@ -129,11 +129,11 @@ void fetch_db() {
 	int rc, ret;
 
 	rc = sqlite3_open("/data/data/com.example.android.bluealrm/databases/temp.db", &db);  
-	char const *sql = "select * from temp WHERE sent=0 and alrmtime < 1550178996;";	
+	char const *sql = "select * from temp WHERE sent=0;";	
 	
 	rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);	
 	if (rc != SQLITE_OK) {
-		KLOG_WARNING(LOG_TAG, "error: %s", sqlite3_errmsg(db));
+		KLOG_WARNING(LOG_TAG, "error: rc = %i -- %s", rc, sqlite3_errmsg(db));
 	}
 	
 	while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
@@ -158,22 +158,16 @@ void fetch_db() {
 					rc = sqlite3_prepare_v2(db, sqlupdt, -1, &stmt_updt, NULL);
 					rc = sqlite3_step(stmt_updt);
 						if (rc != SQLITE_OK) {
-								KLOG_WARNING(LOG_TAG, "error update: %s\n", sqlite3_errmsg(db));
-							}
-					
-					
+								KLOG_WARNING(LOG_TAG, "error: rc = %i -- %s", rc, sqlite3_errmsg(db));
+											}
+					sqlite3_finalize(stmt_updt);						
+											
+								}
+						}
 				}
-		
-		
-		
-		}
-		
-		
-		
-	}
 	
 	if (rc != SQLITE_DONE) {
-	KLOG_WARNING(LOG_TAG, "error: %s", sqlite3_errmsg(db));
+	KLOG_WARNING(LOG_TAG, "error: rc = %i -- %s", rc, sqlite3_errmsg(db));
 	}
 	
 	sqlite3_finalize(stmt);
@@ -206,7 +200,7 @@ int main()
 	//remplir les 4 sinon settime renvoie -1
 	itval.it_value.tv_sec = 30; //initial timer (secondes)
 	itval.it_value.tv_nsec = 0;
-	itval.it_interval.tv_sec = 600; //repeating timer après l'initial (secondes)
+	itval.it_interval.tv_sec = 300; //repeating timer après l'initial (secondes)
 	itval.it_interval.tv_nsec = 0;
 	
 	ev.events = EPOLLIN | EPOLLWAKEUP;	
@@ -248,7 +242,7 @@ int main()
 					return -1;
 				}
 				//handle l'event ici
-				//KLOG_WARNING(LOG_TAG, "****timer triggered******\n");
+				KLOG_WARNING(LOG_TAG, "****timer triggered******\n");
 				fetch_db();
 			}
 			
