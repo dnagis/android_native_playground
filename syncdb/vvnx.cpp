@@ -198,9 +198,9 @@ int main()
 
 	//int timerfd_settime(int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value);
 	//remplir les 4 sinon settime renvoie -1
-	itval.it_value.tv_sec = 30; //initial timer (secondes)
+	itval.it_value.tv_sec = 180; //initial timer (secondes)
 	itval.it_value.tv_nsec = 0;
-	itval.it_interval.tv_sec = 300; //repeating timer après l'initial (secondes)
+	itval.it_interval.tv_sec = 900; //repeating timer après l'initial (secondes)
 	itval.it_interval.tv_nsec = 0;
 	
 	ev.events = EPOLLIN | EPOLLWAKEUP;	
