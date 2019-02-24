@@ -1,0 +1,2 @@
+un jar minimaliste qui peut être lancé par app_process (qui le passe à AndroidRuntime, anciennement Dalvik, 
+qui est la machine virtuelle (équivalent de javaVM sur Android.)
