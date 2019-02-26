@@ -1,6 +1,8 @@
 du natif...
-inspiré de ce qu'on trouve dans
+pour hello_world et les premiers: inspiré de ce qu'on trouve dans
 frameworks/base/cmds
+
+pour hidl: hardware/interfaces
 
 à lire pour la suite (février 2019) **jni**
 https://developer.android.com/ndk/guides/

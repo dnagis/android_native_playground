@@ -1,0 +1,13 @@
+#Premier appel HIDL en natif
+
+#La doc clé:
+https://source.android.com/devices/architecture/hidl-cpp
+
+#Le fichier clé:
+hardware/interfaces
+hardware/interfaces/gnss/1.0/vts/functional/VtsHalGnssV1_0TargetTest.cpp
+
+#Gnss mais garder simple pour en faire un hello world pour d'autres hardwares par la suite
+
+
+

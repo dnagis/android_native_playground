@@ -1,12 +1,8 @@
 /*
 ***
-* But:
-* accéder au GPS directement en natif
+* accéder au GPS en natif
 *  
 * 
-* inspiration:
-* hardware/interfaces/gnss/1.0/vts/functional/VtsHalGnssV1_0TargetTest.cpp
-* https://source.android.com/devices/architecture/hidl-cpp
 * 
 * adb push out/target/product/mido/system/bin/hidlvvnx /system/bin
 * 
@@ -42,7 +38,8 @@ class GnssCallback : public IGnssCallback {
 	virtual ~GnssCallback() = default;
 	
     Return<void> gnssLocationCb(const GnssLocation& location) override {
-      fprintf(stdout, "Location received... %f %f\n", location.longitudeDegrees, location.latitudeDegrees); //gnss/1.0/types.hal
+      fprintf(stdout, "Location received... %f %f %f %f\n", location.latitudeDegrees, location.longitudeDegrees, 
+      horizontalAccuracyMeters, verticalAccuracyMeters); //gnss/1.0/types.hal
       return Void();
     }
 
