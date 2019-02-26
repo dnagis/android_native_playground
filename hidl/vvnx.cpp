@@ -39,7 +39,7 @@ class GnssCallback : public IGnssCallback {
 	
     Return<void> gnssLocationCb(const GnssLocation& location) override {
       fprintf(stdout, "Location received... %f %f %f %f\n", location.latitudeDegrees, location.longitudeDegrees, 
-      horizontalAccuracyMeters, verticalAccuracyMeters); //gnss/1.0/types.hal
+      location.horizontalAccuracyMeters, location.verticalAccuracyMeters); //gnss/1.0/types.hal
       return Void();
     }
 
@@ -60,7 +60,7 @@ class GnssCallback : public IGnssCallback {
     }
     
     Return<void> gnssSetCapabilitesCb(uint32_t capabilities) override {
-      fprintf(stdout,"Capabilities received %d", capabilities);
+      fprintf(stdout,"Capabilities received %d\n", capabilities);
       return Void();
     }
     
@@ -70,7 +70,7 @@ class GnssCallback : public IGnssCallback {
     
     Return<void> gnssSetSystemInfoCb(
         const IGnssCallback::GnssSystemInfo& info) override {
-      fprintf(stdout,"Info received, year %d", info.yearOfHw);
+      fprintf(stdout,"Info received, year %d\n", info.yearOfHw);
       return Void();
     }
 
