@@ -7,6 +7,7 @@ LOCAL_SRC_FILES:= \
 LOCAL_SHARED_LIBRARIES := \
     libutils \
     android.hardware.gnss@1.0 \
+    libhidlbase
 
 
 LOCAL_MODULE:= hidlvvnx
