@@ -36,8 +36,9 @@ chmod 755 /system/bin/alrmvvnx
 chcon u:object_r:healthd_exec:s0 /system/bin/alrmvvnx
 
 rw fichier "/data/data/essai.txt" dans data/data selinux rules:
-sepolicy/public/healthd.te ajouter -> allow healthd system_data_file:file { getattr read write open };
+system/sepolicy/public/healthd.te ajouter -> allow healthd system_data_file:file { getattr read write open };
 commenter les lignes de neverallow system_data_file:file no_w_file_perms; ligne 875 system/sepolicy/public/domain.te
+make selinux_policy
 pushd out/target/product/mido/system/etc/selinux/; adb push plat_sepolicy.cil plat_and_mapping_sepolicy.cil.sha256 plat_file_contexts /etc/selinux/; popd
 
 
@@ -51,43 +52,28 @@ pushd out/target/product/mido/system/etc/selinux/; adb push plat_sepolicy.cil pl
 #include <string.h>
 #include <cutils/klog.h>
 #include <time.h>
-
 #include <sys/epoll.h> 
 #include <sys/timerfd.h>
 
-#include <android-base/file.h> //libbase (LOCAL_SHARED_LIBRARIES)
-
-
+#include "header.h" //mon header, où est définie l'action déclenchée à chaque récurrence (dans un autre fichier pour lisibilité)
 
 #define LOG_TAG "alrmvvnx"
 #define KLOG_LEVEL 6
 
-using namespace android;
 
-static constexpr const char* file_path = "/data/data/essai.txt";
 
+
+
+static int intervalle = 300; //secondes
+
+//des outils pour le fonctionnement d'epoll. ToDo: Il faudrait décrire le mécanisme pour que ce soit moins obscurs
+//ce qu'est la struct epoll_event
 static int eventct = 10;
 static int epollfd;
 static int wakealarm_fd;
 
 
-void action() {
-	
-	KLOG_WARNING(LOG_TAG, "********Timer Triggered******\n");
-		
-	std::string in;
-	std::string out;
-	std::string time_string;
-	timespec ts;
-	
-    base::ReadFileToString(file_path, &in);			
-	clock_gettime(CLOCK_REALTIME, &ts);	
-	time_string = ctime(&ts.tv_sec); //https://linux.die.net/man/3/ctime
-	out = in + time_string;
-	
-    base::WriteStringToFile(out, file_path);
-	
-}
+
 
 int main()
 {
@@ -109,9 +95,9 @@ int main()
 
 	//int timerfd_settime(int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value);
 	//remplir les 4 sinon settime renvoie -1
-	itval.it_value.tv_sec = 20;
+	itval.it_value.tv_sec = 20; //le premier déclenchement
 	itval.it_value.tv_nsec = 0;
-	itval.it_interval.tv_sec = 1800; //repeating
+	itval.it_interval.tv_sec = intervalle; //repeating
 	itval.it_interval.tv_nsec = 0;
 	
 	ev.events = EPOLLIN | EPOLLWAKEUP;	
@@ -138,10 +124,9 @@ int main()
 		
 	nevents = epoll_wait(epollfd, events, eventct, -1);  //arg4 = to en ms, -1=infini
 	//KLOG_WARNING(LOG_TAG, "nevents=%i\n", nevents);
-	//if (nevents == -1) printf("epoll_create failed; errno=%d\n", errno); //kernel/xiaomi/msm8953/include/uapi/asm-generic/errno-base.h
     //if (nevents == -1) KLOG_WARNING(LOG_TAG, "epoll_create failed; errno=%d\n", errno); //kernel/xiaomi/msm8953/include/uapi/asm-generic/errno-base.h
     
-    		 // demultiplex events, il faut read() = traire le wakealarm_fd sinon epoll_wait() ne bloque que la 1ère fois
+		// "demultiplex events", il faut read() = traire le wakealarm_fd sinon epoll_wait() ne bloque que la 1ère fois
 		for (int n = 0; n < nevents; ++n) {
 			
 			if (events[n].data.fd == wakealarm_fd) {
@@ -152,9 +137,8 @@ int main()
 					KLOG_WARNING(LOG_TAG, "wakealarm_event: read wakealarm fd failed\n");
 					return -1;
 				}
-				//handle l'event ici
-				//KLOG_WARNING(LOG_TAG, "****timer triggered******\n");
-				action();
+
+				action(); //action déclenchée à chaque récurrence (dans un autre fichier pour lisibilité)
 			}
 			
 			
