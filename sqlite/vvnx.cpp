@@ -58,19 +58,30 @@ int main()
 	sqlite3_finalize(stmt);
 
 	
+	
+
+	/**écriture dans bdd 
+	 * pour une bdd CREATE TABLE loc (ID INTEGER PRIMARY KEY AUTOINCREMENT, EPOCH INTEGER NOT NULL, ...);
+	std::string stmt;
+	stmt = "insert into loc values(NULL,";
+	stmt += std::to_string(ts.tv_sec); //timespec -> epoch en secondes
+	stmt +=  ",";
+	stmt += std::to_string(ma_variable);
+	stmt +=  ",";
+	...
+	stmt +=  ");";	
+	rc = sqlite3_open("/data/data/loc.db", &db); 
+	rc = sqlite3_exec(db, stmt.c_str(), NULL, 0, NULL);
+	sqlite3_close(db);	
+	* 
+	* 
+	**/
+	
 	/**lire une base de donnees technique avec callback d'un tuto, super lourd
 	char *zErrMsg = 0; 
-   char sql[50] = "select * from temp where ID=234;";
-   rc = sqlite3_exec(db, sql, callback, (void*)data, &zErrMsg);**/		
-
-	/**écriture dans bdd
-	char stmt[70] = "";
-	char debut_stmt[] = "insert into temp values(NULL,11111111, 'eee', 123);";
-	strcpy(stmt, debut_stmt);	
-	printf("commande en string = %s\n", stmt);		
-	rc = sqlite3_open("/data/data/com.example.android.bluealrm/databases/temp.db", &db);
-	rc = sqlite3_exec(db, stmt, NULL, 0, NULL); 			
-	**/
+	char sql[50] = "select * from temp where ID=234;";
+	rc = sqlite3_exec(db, sql, callback, (void*)data, &zErrMsg);**/	
+	
     sqlite3_close(db);
 
 
