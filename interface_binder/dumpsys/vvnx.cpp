@@ -1,7 +1,7 @@
 /*
 ***
 * 
-* dumpsys d'un service
+* dumpsys d'un service -> dump() prend un fd; je mets un fichier
 * 
 * frameworks/base/cmds/
 * 
@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #include <binder/IServiceManager.h>
 
 using namespace android;
@@ -29,7 +30,11 @@ int main()
 	const String16 name("deviceidle");
 	//const String16 name("ZoubZoub"); //contrôle neg
 	Vector<String16> args;
-		
+	FILE * fp;
+	int fd;	
+	timespec ts;
+	
+	clock_gettime(CLOCK_REALTIME, &ts);	
 
     fprintf(stderr, "Début de main, on va se coller au service...\n");
     
@@ -40,11 +45,19 @@ int main()
     if (service == nullptr) {
 		fprintf(stderr, "Le check du service a foiré\n");
 		return 1;
-	}    
+	}
+	
+	    
+    
+    fp = fopen("/data/data/idle.txt", "a");
+    fd = fileno(fp);
+    //fprintf(stderr, "le fd vers fp=%i\n", fd);
+    fprintf(fp, "**************************************************************************************************************\n");
+    fprintf(fp, "********@ %ld\n", (long)ts.tv_sec);
     
     // frameworks/native/cmds/dumpsys/
 	// ./frameworks/native/libs/binder/include/binder/IBinder.h
-    int err = service->dump(1, args); //dump(int fd, const Vector<String16>& args) --> fd1 = stdout
+    int err = service->dump(fd, args); //dump(int fd, const Vector<String16>& args) --> fd=1 = stdout
 
 
 
