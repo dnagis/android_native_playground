@@ -5,7 +5,7 @@
 * 
 * frameworks/base/cmds/
 * 
-* adb push out/target/product/mido/system/bin/idlevvnx /system/bin
+* adb push out/target/product/mido/system/bin/dumpvvnx /system/bin
 * 
 * 
 * 
@@ -30,11 +30,11 @@ int main()
 	const String16 name("deviceidle");
 	//const String16 name("ZoubZoub"); //contrôle neg
 	Vector<String16> args;
-	FILE * fp;
-	int fd;	
-	timespec ts;
+	FILE *stream;
+	int new_fd;	
+	char buffer[255];
 	
-	clock_gettime(CLOCK_REALTIME, &ts);	
+
 
     fprintf(stderr, "Début de main, on va se coller au service...\n");
     
@@ -46,22 +46,39 @@ int main()
 		fprintf(stderr, "Le check du service a foiré\n");
 		return 1;
 	}
-	
-	    
     
-    fp = fopen("/data/data/idle.txt", "a");
-    fd = fileno(fp);
+    //fp = fopen("/data/data/idle.txt", "a");
+    //fd = fileno(fp);
     //fprintf(stderr, "le fd vers fp=%i\n", fd);
-    fprintf(fp, "**************************************************************************************************************\n");
-    fprintf(fp, "********@ %ld\n", (long)ts.tv_sec);
-    
+    new_fd = dup(1);
+    fprintf(stderr, "li 55\n");    
+	stream = fdopen(new_fd, "r");   
+	
+	if (stream == nullptr) {
+		fprintf(stderr, "Le fdopen a foiré\n");
+		return 1;
+	} 
+
     // frameworks/native/cmds/dumpsys/
 	// ./frameworks/native/libs/binder/include/binder/IBinder.h
-    int err = service->dump(fd, args); //dump(int fd, const Vector<String16>& args) --> fd=1 = stdout
+	fprintf(stderr, "li 60\n");
+    int err = service->dump(new_fd, args); //dump(int fd, const Vector<String16>& args) --> fd=1 = stdout
+    
+    
+    
 
 
-
+	fprintf(stderr, "li 64\n");
 	
+	while(fgets(buffer, 255, stream)) {
+    printf("%s *************\n", buffer);
+	}
+    
+	fprintf(stderr, "li 69\n");
+    fclose(stream);
+
+
+	fprintf(stderr, "li 73\n");	
 	fprintf(stdout, "fin du programme err=%i\n", err);
 
 	return 0;
