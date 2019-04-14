@@ -31,7 +31,7 @@ int main()
 	//const String16 name("ZoubZoub"); //contrôle neg
 	Vector<String16> args;
 	FILE *stream;
-	int new_fd;	
+	//int new_fd;	
 	char buffer[255];
 	
 
@@ -50,9 +50,9 @@ int main()
     //fp = fopen("/data/data/idle.txt", "a");
     //fd = fileno(fp);
     //fprintf(stderr, "le fd vers fp=%i\n", fd);
-    new_fd = dup(1);
+    //new_fd = dup(1);
     fprintf(stderr, "li 55\n");    
-	stream = fdopen(new_fd, "r");   
+	stream = fdopen(0, "r");   
 	
 	if (stream == nullptr) {
 		fprintf(stderr, "Le fdopen a foiré\n");
@@ -62,7 +62,7 @@ int main()
     // frameworks/native/cmds/dumpsys/
 	// ./frameworks/native/libs/binder/include/binder/IBinder.h
 	fprintf(stderr, "li 60\n");
-    int err = service->dump(new_fd, args); //dump(int fd, const Vector<String16>& args) --> fd=1 = stdout
+    int err = service->dump((int)&stream, args); //dump(int fd, const Vector<String16>& args) --> fd=1 = stdout
     
     
     
