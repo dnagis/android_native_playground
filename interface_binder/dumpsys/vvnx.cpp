@@ -1,7 +1,9 @@
 /*
 ***
 * 
-* dumpsys d'un service -> dump() prend un fd; je mets un fichier
+* dumpsys d'un service -> dump() prend un fd; on y mettre 1=stdout, ou un fichier avec fopen()
+* mais pour récupérer des variables de l'output de dumpsys c'est une autre histoire: faut pouvoir
+* accéder à ce qui sort de ce fd. Solution que j'ai trouvé: pipe().
 * 
 * frameworks/base/cmds/
 * 
@@ -28,12 +30,9 @@ using namespace android;
 int main()
 {
 	const String16 name("deviceidle");
-	//const String16 name("ZoubZoub"); //contrôle neg
 	Vector<String16> args;
-	FILE *stream;
-	//int new_fd;	
 	char buffer[255];
-	
+	int pipefd[2];
 
 
     fprintf(stderr, "Début de main, on va se coller au service...\n");
@@ -47,38 +46,23 @@ int main()
 		return 1;
 	}
     
-    //fp = fopen("/data/data/idle.txt", "a");
-    //fd = fileno(fp);
-    //fprintf(stderr, "le fd vers fp=%i\n", fd);
-    //new_fd = dup(1);
-    fprintf(stderr, "li 55\n");    
-	stream = fdopen(0, "r");   
-	
-	if (stream == nullptr) {
-		fprintf(stderr, "Le fdopen a foiré\n");
-		return 1;
-	} 
+	if (pipe(pipefd) == -1) {
+        printf("error pipe \n");
+        return 1;
+    }
 
     // frameworks/native/cmds/dumpsys/
 	// ./frameworks/native/libs/binder/include/binder/IBinder.h
-	fprintf(stderr, "li 60\n");
-    int err = service->dump((int)&stream, args); //dump(int fd, const Vector<String16>& args) --> fd=1 = stdout
+    int err = service->dump(pipefd[1], args); //dump(int fd, const Vector<String16>& args) --> fd=1 = stdout
     
     
+    read(pipefd[0], buffer, 50); 
+    printf("*****%s*****\n", buffer); 
+  
     
 
 
-	fprintf(stderr, "li 64\n");
-	
-	while(fgets(buffer, 255, stream)) {
-    printf("%s *************\n", buffer);
-	}
-    
-	fprintf(stderr, "li 69\n");
-    fclose(stream);
 
-
-	fprintf(stderr, "li 73\n");	
 	fprintf(stdout, "fin du programme err=%i\n", err);
 
 	return 0;
