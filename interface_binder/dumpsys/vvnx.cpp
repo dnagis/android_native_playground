@@ -29,10 +29,10 @@ using namespace android;
 
 int main()
 {
-	const String16 name("deviceidle");
+	const String16 name("power");
 	Vector<String16> args;
-	char buffer[255];
-	int pipefd[2];
+	char buffer[1024];
+	int pipefd[2], size;
 
 
     fprintf(stderr, "Début de main, on va se coller au service...\n");
@@ -56,12 +56,31 @@ int main()
     int err = service->dump(pipefd[1], args); //dump(int fd, const Vector<String16>& args) --> fd=1 = stdout
     
     
-    read(pipefd[0], buffer, 50); 
-    printf("*****%s*****\n", buffer); 
-  
-    
+    size = read(pipefd[0], buffer, 1024);    
+    printf("%i\n", size);
+	printf("*****%s*****\n", buffer); 
 
-
+    size = read(pipefd[0], buffer, 1024);    
+    printf("%i\n", size);
+	printf("*****%s*****\n", buffer); 
+	
+	size = read(pipefd[0], buffer, 1024);    
+    printf("%i\n", size);
+	printf("*****%s*****\n", buffer); 		 
+		 
+	size = read(pipefd[0], buffer, 1024);    
+    printf("%i\n", size);
+	printf("*****%s*****\n", buffer); 
+	
+	size = read(pipefd[0], buffer, 1024);    
+    printf("%i\n", size);
+	printf("*****%s*****\n", buffer); 
+	
+	size = read(pipefd[0], buffer, 1024);    
+    printf("%i\n", size);
+	printf("*****%s*****\n", buffer); 
+	
+	
 
 	fprintf(stdout, "fin du programme err=%i\n", err);
 
