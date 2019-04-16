@@ -37,12 +37,9 @@ int main()
 	const String16 name("deviceidle");
 	Vector<String16> args;
 	int pipefd[2];
-	std::string line;
+	std::string line, ma_variable;
 
 
-    //fprintf(stderr, "Début de main, on va se coller au service...\n");
-    
-    
     /**Bind au service via string "name"**/
     sp<IServiceManager> sm = defaultServiceManager();	
 	sp<IBinder> service = sm->checkService(name);
@@ -59,7 +56,7 @@ int main()
 
 	
     /**dumpsys ->dump(int fd, const Vector<String16>& args) frameworks/native/cmds/dumpsys/ frameworks/native/libs/binder/include/binder/IBinder.h**/
-    int err = service->dump(pipefd[1], args); //fd à 1 <=> stdout, pipefd[1] <=> write end
+    service->dump(pipefd[1], args); //fd à 1 <=> stdout, pipefd[1] <=> write end
     
     /**transformation du fd en stream (FILE object), espoir d'avoir plus de fonctions de manipulation de fichier pour parser**/
     /**le stdio_filebuf.h me permet pas comme dans l'ordi de passer directement d'un fd à un istream (pour avoir getline) du coup obligé de passer par ça**/
@@ -70,13 +67,23 @@ int main()
     stdio_filebuf<char> filebuf(pFile);
     std::istream is(&filebuf);
     
-    while(std::getline(is, line)) printf("%s\n", line.c_str());
+    while(std::getline(is, line)) 
+    {
+		//printf("%lu -- %s\n", line.length(), line.c_str());
+		if (line.find("mState") != std::string::npos) 
+		{
+		std::size_t start = 2;
+		size_t ws = line.find(" ", start);
+		//printf("ws @ %lu", ws);
+		ma_variable = line.substr(9, ws-9);
+		break;
+		}
+	}
 	
 	
-
+	printf("ma variable extraite = %s\n", ma_variable.c_str());
     
     
-	fprintf(stdout, "fin du programme err=%i\n", err);
-
+	
 	return 0;
 }
