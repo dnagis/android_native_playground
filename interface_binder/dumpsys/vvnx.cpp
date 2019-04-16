@@ -29,16 +29,17 @@ using namespace android;
 
 int main()
 {
-	const String16 name("power");
+	const String16 name("deviceidle");
 	Vector<String16> args;
-	char buffer[1024];
-	int pipefd[2], size;
+	char buffer[100];
+	int pipefd[2];
 
 
-    fprintf(stderr, "Début de main, on va se coller au service...\n");
+    //fprintf(stderr, "Début de main, on va se coller au service...\n");
     
-    sp<IServiceManager> sm = defaultServiceManager();
-	
+    
+    /**Bind au service via string "name"**/
+    sp<IServiceManager> sm = defaultServiceManager();	
 	sp<IBinder> service = sm->checkService(name);
     
     if (service == nullptr) {
@@ -51,37 +52,23 @@ int main()
         return 1;
     }
 
-    // frameworks/native/cmds/dumpsys/
-	// ./frameworks/native/libs/binder/include/binder/IBinder.h
-    int err = service->dump(pipefd[1], args); //dump(int fd, const Vector<String16>& args) --> fd=1 = stdout
+	
+    /**dumpsys ->dump(int fd, const Vector<String16>& args) frameworks/native/cmds/dumpsys/ frameworks/native/libs/binder/include/binder/IBinder.h**/
+    int err = service->dump(pipefd[1], args); //fd à 1 <=> stdout, pipefd[1] <=> write end
+    
+    /**transformation du fd en stream (FILE object), espoir d'avoir plus de fonctions de manipulation de fichier pour parser**/
+    FILE* pFile = fdopen(pipefd[0], "r");
+    if (pFile == NULL) printf("Error opening pipe");
     
     
-    size = read(pipefd[0], buffer, 1024);    
-    printf("%i\n", size);
-	printf("*****%s*****\n", buffer); 
-
-    size = read(pipefd[0], buffer, 1024);    
-    printf("%i\n", size);
-	printf("*****%s*****\n", buffer); 
-	
-	size = read(pipefd[0], buffer, 1024);    
-    printf("%i\n", size);
-	printf("*****%s*****\n", buffer); 		 
-		 
-	size = read(pipefd[0], buffer, 1024);    
-    printf("%i\n", size);
-	printf("*****%s*****\n", buffer); 
-	
-	size = read(pipefd[0], buffer, 1024);    
-    printf("%i\n", size);
-	printf("*****%s*****\n", buffer); 
-	
-	size = read(pipefd[0], buffer, 1024);    
-    printf("%i\n", size);
-	printf("*****%s*****\n", buffer); 
-	
-	
-
+    while ( ! feof (pFile) )
+     {
+       if ( fgets (buffer , 100 , pFile) == NULL ) break;
+       fputs (buffer , stdout);
+     }
+     fclose (pFile);
+    
+    
 	fprintf(stdout, "fin du programme err=%i\n", err);
 
 	return 0;
