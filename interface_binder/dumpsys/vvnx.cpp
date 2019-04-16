@@ -20,6 +20,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+/** pour transformer un fd en un stream file-like qui me permet de récupérer ligne par ligne
+ * copié depuis ailleurs dans les sources (frameworks/native/service/vr/performanced/, juste enlevé les namespaces.**/
+#include "stdio_filebuf.h" 
+
+
 
 #include <binder/IServiceManager.h>
 
@@ -31,8 +36,8 @@ int main()
 {
 	const String16 name("deviceidle");
 	Vector<String16> args;
-	char buffer[100];
 	int pipefd[2];
+	std::string line;
 
 
     //fprintf(stderr, "Début de main, on va se coller au service...\n");
@@ -57,16 +62,18 @@ int main()
     int err = service->dump(pipefd[1], args); //fd à 1 <=> stdout, pipefd[1] <=> write end
     
     /**transformation du fd en stream (FILE object), espoir d'avoir plus de fonctions de manipulation de fichier pour parser**/
+    /**le stdio_filebuf.h me permet pas comme dans l'ordi de passer directement d'un fd à un istream (pour avoir getline) du coup obligé de passer par ça**/
     FILE* pFile = fdopen(pipefd[0], "r");
     if (pFile == NULL) printf("Error opening pipe");
     
+    /**transformation du FILE stream en istream pour avoir getline**/    
+    stdio_filebuf<char> filebuf(pFile);
+    std::istream is(&filebuf);
     
-    while ( ! feof (pFile) )
-     {
-       if ( fgets (buffer , 100 , pFile) == NULL ) break;
-       fputs (buffer , stdout);
-     }
-     fclose (pFile);
+    while(std::getline(is, line)) printf("%s\n", line.c_str());
+	
+	
+
     
     
 	fprintf(stdout, "fin du programme err=%i\n", err);
